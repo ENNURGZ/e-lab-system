@@ -38,6 +38,7 @@ const UserDashboard = ({ navigation }) => {
     }
   };
 
+
   return (
     <ScrollView style={styles.container}>
       <Title style={styles.title}>My Lab Results</Title>
