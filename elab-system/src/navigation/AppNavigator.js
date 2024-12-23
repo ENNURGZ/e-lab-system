@@ -30,6 +30,8 @@ const AppNavigator = () => {
           name="AdminDashboard" 
           component={AdminDashboard}
           options={{ headerLeft: null }} // Geri dönüş engellemesi
+
+          
         />
       </Stack.Navigator>
     </NavigationContainer>
