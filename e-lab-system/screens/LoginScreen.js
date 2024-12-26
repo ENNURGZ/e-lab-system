@@ -1,19 +1,53 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useApp } from '../context/AppContext';
 
 const LoginScreen = () => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigation = useNavigation();
+  const { login } = useApp();
 
-  const handleLogin = () => {
-    if (username === '211210060' && password === '3258') {
-      navigation.navigate('Admin');
-    } else if (username === '211210016' && password === '3258') {
-      navigation.navigate('User');
-    } else {
-      Alert.alert('Hata', 'Geçersiz kullanıcı adı veya şifre!');
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Hata', 'Lütfen email ve şifrenizi girin!');
+      return;
+    }
+
+    try {
+      console.log('Giriş isteği gönderiliyor...');
+      const response = await fetch('http://10.0.2.2:5000/api/users/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      console.log('Sunucu yanıtı:', response.status);
+      const data = await response.json();
+      console.log('Sunucu data:', data);
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Giriş başarısız');
+      }
+
+      // Context'e kullanıcı bilgilerini kaydet
+      await login(data.user, data.token);
+
+      // Kullanıcı rolüne göre yönlendirme
+      if (data.user.role === 'admin') {
+        navigation.navigate('Admin');
+      } else {
+        navigation.navigate('User');
+      }
+    } catch (error) {
+      console.error('Giriş hatası:', error);
+      Alert.alert('Hata', error.message || 'Giriş yapılırken bir hata oluştu');
     }
   };
 
@@ -22,9 +56,11 @@ const LoginScreen = () => {
       <Text style={styles.title}>E-Lab System</Text>
       <TextInput
         style={styles.input}
-        placeholder="Kullanıcı Adı"
-        value={username}
-        onChangeText={setUsername}
+        placeholder="E-posta"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
       />
       <TextInput
         style={styles.input}
@@ -35,6 +71,12 @@ const LoginScreen = () => {
       />
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Giriş Yap</Text>
+      </TouchableOpacity>
+      <TouchableOpacity 
+        style={[styles.button, styles.registerButton]} 
+        onPress={() => navigation.navigate('Register')}
+      >
+        <Text style={styles.buttonText}>Kayıt Ol</Text>
       </TouchableOpacity>
     </View>
   );
@@ -69,6 +111,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 10,
+  },
+  registerButton: {
+    backgroundColor: '#34C759',
   },
   buttonText: {
     color: '#fff',
