@@ -11,6 +11,7 @@ const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
+<<<<<<< HEAD
     <AppProvider>
       <NavigationContainer>
         <Stack.Navigator initialRouteName="Login">
@@ -37,5 +38,27 @@ export default function App() {
         </Stack.Navigator>
       </NavigationContainer>
     </AppProvider>
+=======
+    <NavigationContainer>
+  
+      <Stack.Navigator initialRouteName="Login">
+        <Stack.Screen 
+          name="Login" 
+          component={LoginScreen} 
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen 
+          name="Admin" 
+          component={AdminScreen} 
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen 
+          name="User" 
+          component={UserScreen} 
+          options={{ headerShown: false }}
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
+>>>>>>> c268c5e263d7cf022c414b96501c07f9706d3dab
   );
 }
