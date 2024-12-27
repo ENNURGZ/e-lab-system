@@ -57,47 +57,49 @@ const RegisterScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Kayıt Ol</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Ad"
-        value={firstName}
-        onChangeText={setFirstName}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Soyad"
-        value={lastName}
-        onChangeText={setLastName}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Kullanıcı Adı"
-        value={generateUsername()}
-        editable={false}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="E-posta"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Şifre"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-      <TouchableOpacity style={styles.button} onPress={handleRegister}>
-        <Text style={styles.buttonText}>Kayıt Ol</Text>
-      </TouchableOpacity>
+      <View style={styles.formContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Ad"
+          value={firstName}
+          onChangeText={setFirstName}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Soyad"
+          value={lastName}
+          onChangeText={setLastName}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Kullanıcı Adı"
+          value={generateUsername()}
+          editable={false}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="E-posta"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Şifre"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+        <TouchableOpacity style={styles.button} onPress={handleRegister}>
+          <Text style={styles.buttonText}>Kayıt Ol</Text>
+        </TouchableOpacity>
+      </View>
       <TouchableOpacity 
-        style={styles.loginLink} 
+        style={styles.backButton} 
         onPress={() => navigation.navigate('Login')}
       >
-        <Text style={styles.loginLinkText}>Zaten hesabınız var mı? Giriş yapın</Text>
+        <Text style={styles.backButtonText}>Zaten hesabınız var mı? Giriş yapın</Text>
       </TouchableOpacity>
     </View>
   );
@@ -109,41 +111,83 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
   },
   title: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: 'bold',
-    marginBottom: 30,
+    marginBottom: 40,
+    color: '#6B4EE6',
+    textShadowColor: 'rgba(107, 78, 230, 0.15)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  formContainer: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    borderRadius: 16,
+    shadowColor: '#6B4EE6',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   input: {
     width: '100%',
-    height: 50,
+    height: 55,
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 15,
+    borderColor: '#E0E0E0',
+    borderRadius: 12,
+    paddingHorizontal: 20,
     marginBottom: 15,
+    backgroundColor: '#FFFFFF',
+    fontSize: 16,
+    shadowColor: '#6B4EE6',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
   button: {
     width: '100%',
-    height: 50,
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
+    height: 55,
+    backgroundColor: '#6B4EE6',
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 10,
+    shadowColor: '#6B4EE6',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 4,
   },
   buttonText: {
-    color: '#fff',
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 40,
+    left: 20,
+    padding: 10,
+  },
+  backButtonText: {
+    color: '#6B4EE6',
     fontSize: 16,
-    fontWeight: 'bold',
-  },
-  loginLink: {
-    marginTop: 15,
-  },
-  loginLinkText: {
-    color: '#007AFF',
-    fontSize: 14,
+    fontWeight: '600',
   },
 });
 
