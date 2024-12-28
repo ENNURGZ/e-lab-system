@@ -1,16 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { commonStyles, colors } from '../styles/commonStyles';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
+import { useApp } from '../context/AppContext';
+import { Alert } from 'react-native';
 
 const TestQueryScreen = () => {
   const navigation = useNavigation();
+  const { token } = useApp();
   const [activeTab, setActiveTab] = useState('test'); // 'test' veya 'patient'
   const [birthDate, setBirthDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [selectedTest, setSelectedTest] = useState('');
+  const [testNames, setTestNames] = useState([]);
+  const [searchParams, setSearchParams] = useState({
+    testName: '',
+    startDate: new Date(),
+    endDate: new Date(),
+  });
   const [tcNo, setTcNo] = useState('');
 
   const onDateChange = (event, selectedDate) => {
@@ -18,6 +26,36 @@ const TestQueryScreen = () => {
     setShowDatePicker(false);
     setBirthDate(currentDate);
   };
+
+  // Test isimlerini getir
+  useEffect(() => {
+    const fetchTestNames = async () => {
+      try {
+        const response = await fetch('http://10.0.2.2:5000/api/guides/test-names', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Test isimleri alınamadı');
+        }
+
+        const data = await response.json();
+        setTestNames(data);
+
+        // İlk test ismini varsayılan olarak seç
+        if (data.length > 0) {
+          setSearchParams(prev => ({ ...prev, testName: data[0] }));
+        }
+      } catch (error) {
+        console.error('Test isimleri getirme hatası:', error);
+        Alert.alert('Hata', 'Test isimleri alınırken bir hata oluştu');
+      }
+    };
+
+    fetchTestNames();
+  }, [token]);
 
   const renderTestQuery = () => (
     <>
@@ -38,14 +76,18 @@ const TestQueryScreen = () => {
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Tetkik Adı</Text>
+          <Text style={styles.inputLabel}>Test Adı</Text>
           <View style={styles.pickerContainer}>
             <Picker
-              selectedValue={selectedTest}
-              onValueChange={(itemValue) => setSelectedTest(itemValue)}
+              selectedValue={searchParams.testName}
+              onValueChange={(itemValue) =>
+                setSearchParams({ ...searchParams, testName: itemValue })
+              }
               style={styles.picker}
             >
-              <Picker.Item label="Tetkik Seçiniz" value="" />
+              {testNames.map((testName, index) => (
+                <Picker.Item key={index} label={testName} value={testName} />
+              ))}
             </Picker>
           </View>
         </View>
@@ -80,21 +122,25 @@ const TestQueryScreen = () => {
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Tetkik Adı</Text>
+          <Text style={styles.inputLabel}>Test Adı</Text>
           <View style={styles.pickerContainer}>
             <Picker
-              selectedValue={selectedTest}
-              onValueChange={(itemValue) => setSelectedTest(itemValue)}
+              selectedValue={searchParams.testName}
+              onValueChange={(itemValue) =>
+                setSearchParams({ ...searchParams, testName: itemValue })
+              }
               style={styles.picker}
             >
-              <Picker.Item label="Tetkik Seçiniz" value="" />
+              {testNames.map((testName, index) => (
+                <Picker.Item key={index} label={testName} value={testName} />
+              ))}
             </Picker>
           </View>
         </View>
       </View>
 
       <View style={[commonStyles.card, styles.resultCard]}>
-        <Text style={styles.sectionTitle}>Hasta ve Test Sonuçları</Text>
+        <Text style={styles.sectionTitle}>Hasta Bilgileri</Text>
         <View style={styles.divider} />
         <View style={styles.resultContainer}>
           <Text style={styles.noResultText}>Hasta bilgisi bulunamadı.</Text>
@@ -123,7 +169,11 @@ const TestQueryScreen = () => {
         <Text style={commonStyles.headerTitle}>Test Sorgulama</Text>
       </View>
 
-      <ScrollView style={commonStyles.contentContainer}>
+      <ScrollView 
+        style={[commonStyles.contentContainer]}
+        showsVerticalScrollIndicator={true}
+        bounces={true}
+      >
         <View style={[commonStyles.card, styles.welcomeCard]}>
           <Text style={styles.welcomeText}>Test Sorgulama</Text>
           <Text style={styles.descriptionText}>

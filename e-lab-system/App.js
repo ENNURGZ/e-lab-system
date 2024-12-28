@@ -9,6 +9,8 @@ import UserScreen from './screens/UserScreen';
 import AddGuideScreen from './screens/AddGuideScreen';
 import AddPatientTestScreen from './screens/AddPatientTestScreen';
 import TestQueryScreen from './screens/TestQueryScreen';
+import TestResultsScreen from './screens/TestResultsScreen';
+import ProfileScreen from './screens/ProfileScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -50,6 +52,16 @@ export default function App() {
           <Stack.Screen 
             name="TestQuery" 
             component={TestQueryScreen} 
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen 
+            name="TestResults" 
+            component={TestResultsScreen} 
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen 
+            name="Profile" 
+            component={ProfileScreen} 
             options={{ headerShown: false }}
           />
         </Stack.Navigator>

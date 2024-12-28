@@ -40,7 +40,7 @@ const UserScreen = () => {
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
             style={[commonStyles.card, styles.menuButton]}
-            onPress={() => navigation.navigate('ViewTests')}
+            onPress={() => navigation.navigate('TestResults')}
           >
             <Text style={styles.buttonTitle}>Test Sonuçlarım</Text>
             <Text style={styles.buttonDescription}>
@@ -48,25 +48,9 @@ const UserScreen = () => {
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={[commonStyles.card, styles.menuButton]}
-            onPress={() => navigation.navigate('ViewHistory')}
-          >
-            <Text style={styles.buttonTitle}>Geçmiş Kayıtlarım</Text>
-            <Text style={styles.buttonDescription}>
-              Geçmiş test kayıtlarınızı inceleyin
-            </Text>
-          </TouchableOpacity>
+          
 
-          <TouchableOpacity 
-            style={[commonStyles.card, styles.menuButton]}
-            onPress={() => navigation.navigate('ViewGuides')}
-          >
-            <Text style={styles.buttonTitle}>Rehberler</Text>
-            <Text style={styles.buttonDescription}>
-              Test ve laboratuvar rehberlerini görüntüleyin
-            </Text>
-          </TouchableOpacity>
+        
 
           <TouchableOpacity 
             style={[commonStyles.card, styles.menuButton]}

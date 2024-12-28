@@ -4,6 +4,7 @@ const cors = require('cors');
 require('dotenv').config();
 
 const userRoutes = require('./routes/userRoutes');
+const guideRoutes = require('./routes/guideRoutes');
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/api/users', userRoutes);
+app.use('/api/guides', guideRoutes);
 
 // MongoDB bağlantısı
 console.log('MongoDB bağlantısı başlatılıyor...');

@@ -1,21 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
 const RegisterScreen = () => {
+  const [tcNo, setTcNo] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigation = useNavigation();
 
-  const generateUsername = () => {
-    return `${firstName.toLowerCase()}.${lastName.toLowerCase()}`;
-  };
-
   const handleRegister = async () => {
-    if (!firstName || !lastName || !email || !password) {
+    if (!tcNo || !firstName || !lastName || !email || !password) {
       Alert.alert('Hata', 'Lütfen tüm alanları doldurun!');
+      return;
+    }
+
+    if (tcNo.length !== 11) {
+      Alert.alert('Hata', 'TC Kimlik numarası 11 haneli olmalıdır!');
       return;
     }
 
@@ -27,6 +29,7 @@ const RegisterScreen = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          tcNo,
           firstName,
           lastName,
           email,
@@ -60,6 +63,14 @@ const RegisterScreen = () => {
       <View style={styles.formContainer}>
         <TextInput
           style={styles.input}
+          placeholder="TC Kimlik No"
+          value={tcNo}
+          onChangeText={setTcNo}
+          keyboardType="numeric"
+          maxLength={11}
+        />
+        <TextInput
+          style={styles.input}
           placeholder="Ad"
           value={firstName}
           onChangeText={setFirstName}
@@ -69,12 +80,6 @@ const RegisterScreen = () => {
           placeholder="Soyad"
           value={lastName}
           onChangeText={setLastName}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Kullanıcı Adı"
-          value={generateUsername()}
-          editable={false}
         />
         <TextInput
           style={styles.input}

@@ -5,17 +5,23 @@ const jwt = require('jsonwebtoken');
 // Kullanıcı kaydı
 const registerUser = async (req, res) => {
     try {
-        console.log('Register isteği alındı:', req.body);
-        const { firstName, lastName, email, password } = req.body;
+        console.log('Register isteği alındı controller:', req.body);
+        const { tcNo, firstName, lastName, email, password } = req.body;
 
-        if (!firstName || !lastName || !email || !password) {
-            console.log('Eksik bilgi:', { firstName, lastName, email, password: password ? 'var' : 'yok' });
-            return res.status(400).json({ message: 'Tüm alanları doldurun' });
+        if (!tcNo || !firstName || !lastName || !email || !password) {
+               return res.status(400).json({ message: 'Tüm alanları doldurun' });
         }
 
-        // Username oluştur
-        const username = `${firstName.toLowerCase()}.${lastName.toLowerCase()}`;
-        console.log('Oluşturulan username:', username);
+        // TC Kimlik numarası kontrolü
+        if (tcNo.length !== 11) {
+            return res.status(400).json({ message: 'TC Kimlik numarası 11 haneli olmalıdır' });
+        }
+
+        // TC Kimlik numarası kontrolü
+        const existingTcNo = await User.findOne({ tcNo });
+        if (existingTcNo) {
+            return res.status(400).json({ message: 'Bu TC Kimlik numarası zaten kayıtlı' });
+        }
 
         // Email kontrolü
         const existingUser = await User.findOne({ email });
@@ -23,20 +29,14 @@ const registerUser = async (req, res) => {
             return res.status(400).json({ message: 'Bu email zaten kayıtlı' });
         }
 
-        // Username kontrolü
-        const existingUsername = await User.findOne({ username });
-        if (existingUsername) {
-            return res.status(400).json({ message: 'Bu kullanıcı adı zaten kayıtlı' });
-        }
-
         // Şifreyi hashleme
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // Yeni kullanıcı oluşturma
         const user = new User({
+            tcNo,
             firstName,
             lastName,
-            username,
             email,
             password: hashedPassword
         });
@@ -84,9 +84,9 @@ const loginUser = async (req, res) => {
             token,
             user: {
                 id: user._id,
+                tcNo: user.tcNo,
                 firstName: user.firstName,
                 lastName: user.lastName,
-                username: user.username,
                 email: user.email,
                 role: user.role
             }
@@ -111,8 +111,51 @@ const getUserProfile = async (req, res) => {
     }
 };
 
+// Kullanıcı profilini güncelle
+const updateProfile = async (req, res) => {
+    try {
+        const { tcNo, firstName, lastName, email, newPassword } = req.body;
+        const userId = req.user.id || req.user._id; // JWT'den gelen kullanıcı ID'si
+
+        // Kullanıcıyı bul
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
+        }
+
+        // Bilgileri güncelle
+        if (firstName) user.firstName = firstName;
+        if (lastName) user.lastName = lastName;
+        if (email) user.email = email;
+
+        // Eğer yeni şifre varsa güncelle
+        if (newPassword) {
+            const salt = await bcrypt.genSalt(10);
+            user.password = await bcrypt.hash(newPassword, salt);
+        }
+
+        // Kullanıcıyı kaydet
+        await user.save();
+
+        // Şifreyi çıkararak kullanıcı bilgilerini gönder
+        const userResponse = {
+            _id: user._id,
+            tcNo: user.tcNo,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email
+        };
+
+        res.json(userResponse);
+    } catch (error) {
+        console.error('Profil güncelleme hatası:', error);
+        res.status(500).json({ message: 'Profil güncellenirken bir hata oluştu' });
+    }
+};
+
 module.exports = {
     registerUser,
     loginUser,
-    getUserProfile
+    getUserProfile,
+    updateProfile
 };
