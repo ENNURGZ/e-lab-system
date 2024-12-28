@@ -5,6 +5,7 @@ require('dotenv').config();
 
 const userRoutes = require('./routes/userRoutes');
 const guideRoutes = require('./routes/guideRoutes');
+const testRoutes = require('./routes/testRoutes');
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/guides', guideRoutes);
+app.use('/api/tests', testRoutes);
 
 // MongoDB bağlantısı
 console.log('MongoDB bağlantısı başlatılıyor...');

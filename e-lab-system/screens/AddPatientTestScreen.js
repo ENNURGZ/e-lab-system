@@ -99,23 +99,32 @@ const AddPatientTestScreen = () => {
     setPatientData({ ...patientData, sampleTime: currentDate });
   };
 
-  const handleSubmit = () => {
-    // Tüm alanların dolu olup olmadığını kontrol et
-    if (!patientData.tcNo || !patientData.fullName || !patientData.birthPlace || 
-        patientData.tests.length === 0) {
-      Alert.alert('Hata', 'Lütfen tüm alanları doldurunuz ve en az bir test ekleyiniz!');
+  const handleSaveTests = async () => {
+    if (!patientData.tcNo || !patientData.fullName || patientData.tests.length === 0) {
+      Alert.alert('Hata', 'Lütfen tüm gerekli alanları doldurun ve en az bir test ekleyin!');
       return;
     }
 
-    // TC Kimlik numarası kontrolü
-    if (patientData.tcNo.length !== 11) {
-      Alert.alert('Hata', 'TC Kimlik numarası 11 haneli olmalıdır!');
-      return;
-    }
+    try {
+      const response = await fetch('http://10.0.2.2:5000/api/tests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(patientData)
+      });
 
-    console.log('Kaydedilen veriler:', patientData);
-    Alert.alert('Başarılı', 'Testler başarıyla kaydedildi!');
-    navigation.goBack();
+      if (!response.ok) {
+        throw new Error('Test sonuçları kaydedilemedi');
+      }
+
+      Alert.alert('Başarılı', 'Test sonuçları başarıyla kaydedildi');
+      navigation.goBack();
+    } catch (error) {
+      console.error('Test kaydetme hatası:', error);
+      Alert.alert('Hata', 'Test sonuçları kaydedilirken bir hata oluştu');
+    }
   };
 
   const formatDate = (date) => {
@@ -298,19 +307,22 @@ const AddPatientTestScreen = () => {
             )}
           </View>
 
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-            <Text style={styles.submitButtonText}>Kaydet</Text>
+          <TouchableOpacity 
+            style={[commonStyles.button, styles.submitButton]} 
+            onPress={handleSaveTests}
+          >
+            <Text style={[commonStyles.buttonText, styles.submitButtonText]}>Kaydet</Text>
           </TouchableOpacity>
-        </View>
 
-        <View style={[commonStyles.card, styles.infoCard]}>
-          <View style={styles.infoIcon}>
-            <Text style={styles.infoIconText}>i</Text>
+          <View style={[commonStyles.card, styles.infoCard]}>
+            <View style={styles.infoIcon}>
+              <Text style={styles.infoIconText}>i</Text>
+            </View>
+            <Text style={styles.infoText}>
+              Test sonuçları sisteme eklendikten sonra düzenlenemez. Lütfen bilgileri 
+              dikkatli bir şekilde kontrol ediniz.
+            </Text>
           </View>
-          <Text style={styles.infoText}>
-            Test sonuçları sisteme eklendikten sonra düzenlenemez. Lütfen bilgileri 
-            dikkatli bir şekilde kontrol ediniz.
-          </Text>
         </View>
       </ScrollView>
     </View>
