@@ -27,7 +27,6 @@ const TestQueryScreen = () => {
   const [loading, setLoading] = useState(false);
   const [guideResults, setGuideResults] = useState(null);
   const [patientInfo, setPatientInfo] = useState(null);
-  const [testResults, setTestResults] = useState(null);
   const [testHistory, setTestHistory] = useState([]); // Yeni state ekle
   const [availableTests, setAvailableTests] = useState([]); // Mevcut test adları
   const [selectedTests, setSelectedTests] = useState([]); // Seçili test adları
@@ -248,11 +247,9 @@ const TestQueryScreen = () => {
       const data = await response.json();
       
       if (response.ok) {
-        setTestResults(data.testResults);
         setTestHistory(data.testHistory || []);
       } else {
         Alert.alert('Hata', data.message || 'Test sonuçları getirilemedi');
-        setTestResults(null);
         setTestHistory([]);
       }
     } catch (error) {
@@ -435,123 +432,56 @@ const TestQueryScreen = () => {
         </View>
       </View>
 
-      <View style={styles.testHistoryContainer}>
-        {testHistory && testHistory.length > 0 && (
-          <View style={styles.testHistoryCard}>
-            <Text style={styles.testHistoryTitle}>Test Geçmişi</Text>
-            {testHistory.map((record, index) => (
-              <View key={index} style={styles.testHistoryRecord}>
-                <Text style={styles.testHistoryDate}>
-                  Örnek Alım Zamanı: {new Date(record.sampleTime).toLocaleDateString('tr-TR')}
-                </Text>
-                {record.tests.map((test, testIndex) => (
-                  <View key={testIndex} style={styles.testHistoryTest}>
-                    <Text style={styles.testHistoryTestName}>{test.testName}</Text>
-                    <Text style={styles.testHistoryTestValue}>Sonuç: {test.testValue}</Text>
-                  </View>
-                ))}
-              </View>
-            ))}
-          </View>
-        )}
-      </View>
+      
     </>
   );
 
   const renderPatientQuery = () => (
-    <>
-      <View style={[commonStyles.card, styles.searchCard]}>
-        <Text style={styles.sectionTitle}>Hasta Ara</Text>
-        <View style={styles.divider} />
-        
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>T.C. Kimlik No</Text>
-          <TextInput
-            style={styles.textInput}
-            value={tcNo}
-            onChangeText={setTcNo}
-            placeholder="T.C. Kimlik No giriniz"
-            keyboardType="numeric"
-            maxLength={11}
-          />
-        </View>
-
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[styles.searchButton, { marginRight: 10 }]}
-            onPress={handlePatientSearch}
-            disabled={loading || !tcNo || tcNo.length !== 11}
-          >
-            <View style={styles.buttonContent}>
-              <Icon name="user" size={20} color="#fff" style={styles.buttonIcon} />
-              <Text style={styles.buttonText}>
-                {loading ? 'Yükleniyor...' : 'Hasta Bilgileri'}
-              </Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.searchButton}
-            onPress={fetchTestResults}
-            disabled={loading || !tcNo || tcNo.length !== 11}
-          >
-            <View style={styles.buttonContent}>
-              <Icon name="flask" size={20} color="#fff" style={styles.buttonIcon} />
-              <Text style={styles.buttonText}>
-                {loading ? 'Yükleniyor...' : 'Test Sonuçları'}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        {patientInfo && (
-          <View style={styles.patientInfoContainer}>
-            <Text style={styles.patientInfoTitle}>Hasta Bilgileri</Text>
-            <View style={styles.patientInfoRow}>
-              <Text style={styles.patientInfoLabel}>Ad Soyad:</Text>
-              <Text style={styles.patientInfoValue}>{patientInfo.fullName}</Text>
-            </View>
-            <View style={styles.patientInfoRow}>
-              <Text style={styles.patientInfoLabel}>TC No:</Text>
-              <Text style={styles.patientInfoValue}>{patientInfo.tcNo}</Text>
-            </View>
-            <View style={styles.patientInfoRow}>
-              <Text style={styles.patientInfoLabel}>Doğum Tarihi:</Text>
-              <Text style={styles.patientInfoValue}>
-                {new Date(patientInfo.birthDate).toLocaleDateString('tr-TR')}
-              </Text>
-            </View>
-            <View style={styles.patientInfoRow}>
-              <Text style={styles.patientInfoLabel}>Cinsiyet:</Text>
-              <Text style={styles.patientInfoValue}>{patientInfo.gender}</Text>
-            </View>
-            <View style={styles.patientInfoRow}>
-              <Text style={styles.patientInfoLabel}>Doğum Yeri:</Text>
-              <Text style={styles.patientInfoValue}>{patientInfo.birthPlace}</Text>
-            </View>
+    <View style={styles.patientQueryContainer}>
+      {renderPatientSearch()}
+      {patientInfo && (
+        <View style={styles.patientInfoContainer}>
+          <Text style={styles.patientInfoTitle}>Hasta Bilgileri</Text>
+          <View style={styles.patientInfoRow}>
+            <Text style={styles.patientInfoLabel}>Ad Soyad:</Text>
+            <Text style={styles.patientInfoValue}>{patientInfo.fullName}</Text>
           </View>
-        )}
-
-        {testHistory && testHistory.length > 0 && (
-          <View style={styles.testHistoryContainer}>
-            <Text style={styles.testHistoryTitle}>Test Geçmişi</Text>
-            {testHistory.map((record, index) => (
-              <View key={index} style={styles.testHistoryCard}>
-                <Text style={styles.testHistoryDate}>
-                  Örnek Alım Zamanı: {new Date(record.sampleTime).toLocaleDateString('tr-TR')}
-                </Text>
-                {record.tests.map((test, testIndex) => (
-                  <View key={testIndex} style={styles.testHistoryTest}>
-                    <Text style={styles.testHistoryTestName}>{test.testName}</Text>
-                    <Text style={styles.testHistoryTestValue}>Sonuç: {test.testValue}</Text>
-                  </View>
-                ))}
-              </View>
-            ))}
+          <View style={styles.patientInfoRow}>
+            <Text style={styles.patientInfoLabel}>Doğum Tarihi:</Text>
+            <Text style={styles.patientInfoValue}>
+              {new Date(patientInfo.birthDate).toLocaleDateString('tr-TR')}
+            </Text>
           </View>
-        )}
-      </View>
-    </>
+          <View style={styles.patientInfoRow}>
+            <Text style={styles.patientInfoLabel}>Cinsiyet:</Text>
+            <Text style={styles.patientInfoValue}>{patientInfo.gender}</Text>
+          </View>
+          <View style={styles.patientInfoRow}>
+            <Text style={styles.patientInfoLabel}>Doğum Yeri:</Text>
+            <Text style={styles.patientInfoValue}>{patientInfo.birthPlace}</Text>
+          </View>
+        </View>
+      )}
+
+      {testHistory && testHistory.length > 0 && (
+        <View style={styles.testHistoryContainer}>
+          <Text style={styles.testHistoryTitle}>Test Geçmişi</Text>
+          {testHistory.map((record, index) => (
+            <View key={index} style={styles.testHistoryCard}>
+              <Text style={styles.testHistoryDate}>
+                Örnek Alım Zamanı: {new Date(record.sampleTime).toLocaleDateString('tr-TR')}
+              </Text>
+              {record.tests.map((test, testIndex) => (
+                <View key={testIndex} style={styles.testHistoryTest}>
+                  <Text style={styles.testHistoryTestName}>{test.testName}</Text>
+                  <Text style={styles.testHistoryTestValue}>Sonuç: {test.testValue}</Text>
+                </View>
+              ))}
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
   );
 
   const renderPatientSearch = () => (
@@ -573,23 +503,6 @@ const TestQueryScreen = () => {
           {loading ? 'Yükleniyor...' : 'Hasta Ara'}
         </Text>
       </TouchableOpacity>
-    </View>
-  );
-
-  const renderTestResults = () => (
-    <View style={styles.testResultsContainer}>
-      {testResults && testResults.length > 0 && (
-        <View style={styles.testResultsCard}>
-          <Text style={styles.testResultsTitle}>Test Sonuçları</Text>
-          {testResults.map((test, index) => (
-            <View key={index} style={styles.testInfoContainer}>
-              <Text style={styles.testInfoText}>Test Adı: {test.testName}</Text>
-              <Text style={styles.testInfoText}>Sonuç: {test.testValue}</Text>
-              <View style={styles.testDivider} />
-            </View>
-          ))}
-        </View>
-      )}
     </View>
   );
 
@@ -1109,6 +1022,122 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     elevation: 2,
   },
+  testHistoryTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
+  },
+  testHistoryRecord: {
+    marginBottom: 10,
+  },
+  testHistoryDate: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 5,
+  },
+  testHistoryTest: {
+    marginBottom: 5,
+  },
+  testHistoryTestName: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: 'bold',
+  },
+  testHistoryTestValue: {
+    fontSize: 14,
+    color: '#666',
+  },
+  patientInfoTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
+  },
+  patientInfoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  patientInfoLabel: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: 'bold',
+  },
+  patientInfoValue: {
+    fontSize: 14,
+    color: '#333',
+  },
+  patientQueryContainer: {
+    padding: 20,
+  },
+  patientSearchContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  patientSearchInput: {
+    flex: 1,
+    height: 40,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    marginRight: 10,
+    backgroundColor: '#fff',
+  },
+  patientSearchButton: {
+    backgroundColor: colors.primary,
+    padding: 12,
+    borderRadius: 25,
+    alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  patientSearchButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  guideCard: {
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 10,
+    elevation: 2,
+  },
+  guideName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.primary,
+    marginBottom: 10,
+  },
+  ageRange: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 10,
+  },
+  rangeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  rangeLabel: {
+    fontSize: 14,
+    color: '#333',
+  },
+  rangeValue: {
+    fontSize: 14,
+    color: '#666',
+  },
+  testHistoryContainer: {
+    marginBottom: 15,
+  },
   testSelectionContainer: {
     marginBottom: 15,
     backgroundColor: '#fff',
@@ -1205,94 +1234,6 @@ const styles = StyleSheet.create({
     color: '#6c757d',
     fontStyle: 'italic',
     marginTop: 2,
-  },
-  guideCard: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
-    elevation: 2,
-  },
-  guideName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.primary,
-    marginBottom: 10,
-  },
-  ageRange: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 10,
-  },
-  rangeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  rangeLabel: {
-    fontSize: 14,
-    color: '#333',
-  },
-  rangeValue: {
-    fontSize: 14,
-    color: '#666',
-  },
-  testHistoryContainer: {
-    marginBottom: 15,
-  },
-  testHistoryCard: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
-    elevation: 2,
-  },
-  testHistoryTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-  },
-  testHistoryRecord: {
-    marginBottom: 10,
-  },
-  testHistoryDate: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 5,
-  },
-  testHistoryTest: {
-    marginBottom: 5,
-  },
-  testHistoryTestName: {
-    fontSize: 14,
-    color: '#333',
-    fontWeight: 'bold',
-  },
-  testHistoryTestValue: {
-    fontSize: 14,
-    color: '#666',
-  },
-  patientInfoTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-  },
-  patientInfoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  patientInfoLabel: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: 'bold',
-  },
-  patientInfoValue: {
-    fontSize: 14,
-    color: '#333',
   },
 });
 
