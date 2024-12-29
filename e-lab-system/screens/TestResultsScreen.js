@@ -1,64 +1,227 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { useNavigation } from '@react-navigation/native';
 import { useApp } from '../context/AppContext';
 import { commonStyles, colors } from '../styles/commonStyles';
-import { useNavigation } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-const TEST_TYPES = [
-  { label: 'Tüm Tetkiklerim', value: 'all' },
-];
+const API_URL = 'http://10.0.2.2:5000';
 
 const TestResultsScreen = () => {
-  const [testResults, setTestResults] = useState([]);
-  const [filteredResults, setFilteredResults] = useState([]);
-  const [selectedTestType, setSelectedTestType] = useState('all');
-  const [loading, setLoading] = useState(true);
-  const { user } = useApp();
   const navigation = useNavigation();
+  const { user, token } = useApp();
+  const [loading, setLoading] = useState(true);
+  const [testResults, setTestResults] = useState([]);
+  const [uniqueTestNames, setUniqueTestNames] = useState([]);
+  const [selectedTest, setSelectedTest] = useState('');
+  const [guideResults, setGuideResults] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchTestResults();
   }, []);
 
   useEffect(() => {
-    filterResults();
-  }, [selectedTestType, testResults]);
-
-  const filterResults = () => {
-    setFilteredResults(testResults);
-  };
+    if (selectedTest) {
+      checkGuideValues();
+    }
+  }, [selectedTest]);
 
   const fetchTestResults = async () => {
     try {
-      // Backend API'den test sonuçlarını çekme işlemi
-      // Örnek olarak:
-      // const response = await fetch(`${API_URL}/test-results/${user.id}`);
-      // const data = await response.json();
-      // setTestResults(data);
-      
-      // Şimdilik boş array
-      const mockData = [];
-      
-      setTestResults(mockData);
-      setFilteredResults(mockData);
-      setLoading(false);
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(`${API_URL}/api/tests/patient/${user.tcNo}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        const testHistory = result.data.testHistory || [];
+        setTestResults(testHistory);
+
+        // Benzersiz test adlarını çıkar
+        const testNames = [...new Set(
+          testHistory.flatMap(record => 
+            record.tests.map(t => t.testName)
+          )
+        )].sort();
+        
+        setUniqueTestNames(testNames);
+        
+        // İlk testi otomatik seç
+        if (testNames.length > 0 && !selectedTest) {
+          setSelectedTest(testNames[0]);
+        }
+      } else {
+        throw new Error(result.message || 'Test sonuçları alınamadı');
+      }
     } catch (error) {
-      console.error('Test sonuçları alınırken hata oluştu:', error);
+      console.error('Test sonuçları getirme hatası:', error);
+      setError(error.message || 'Test sonuçları yüklenirken bir hata oluştu');
+    } finally {
       setLoading(false);
     }
   };
 
+  const calculateAgeInMonths = (birthDate) => {
+    const birth = new Date(birthDate);
+    const today = new Date();
+    return (today.getFullYear() - birth.getFullYear()) * 12 + 
+           (today.getMonth() - birth.getMonth());
+  };
+
+  const checkGuideValues = async () => {
+    if (!selectedTest) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Seçili testin son değerini bul
+      const latestResult = testResults
+        .flatMap(record => record.tests)
+        .find(test => test.testName === selectedTest);
+
+      if (!latestResult) {
+        throw new Error('Test sonucu bulunamadı');
+      }
+
+      const ageInMonths = calculateAgeInMonths(user.birthDate);
+      
+      const response = await fetch(`${API_URL}/api/guides/check`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          testName: selectedTest,
+          ageInMonths: ageInMonths,
+          testValue: parseFloat(latestResult.testValue)
+        })
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setGuideResults(result.data);
+      } else {
+        throw new Error(result.message || 'Kılavuz değerleri alınamadı');
+      }
+    } catch (error) {
+      console.error('Kılavuz kontrolü hatası:', error);
+      setError(error.message || 'Kılavuz değerleri kontrol edilirken bir hata oluştu');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('tr-TR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Test sonucunun durumunu belirle
+  const getTestStatus = (value, guide) => {
+    const numValue = parseFloat(value);
+    
+    if (isNaN(numValue)) return 'Geçersiz Değer';
+    
+    // Tüm aralıklar için durumları kontrol et
+    const statuses = [];
+
+    // 1. Geometrik Ortalama ± 2SD
+    if (guide.geometricMean !== 0 || guide.geometricSD !== 0) {
+      const geometricLow = guide.geometricMean - (2 * guide.geometricSD);
+      const geometricHigh = guide.geometricMean + (2 * guide.geometricSD);
+      if (numValue < geometricLow) {
+        statuses.push({ type: 'Geometrik', status: 'Düşük' });
+      } else if (numValue > geometricHigh) {
+        statuses.push({ type: 'Geometrik', status: 'Yüksek' });
+      } else {
+        statuses.push({ type: 'Geometrik', status: 'Normal' });
+      }
+    }
+
+    // 2. Ortalama ± 2SD
+    if (guide.mean !== 0 || guide.sd !== 0) {
+      const meanLow = guide.mean - (2 * guide.sd);
+      const meanHigh = guide.mean + (2 * guide.sd);
+      if (numValue < meanLow) {
+        statuses.push({ type: 'Ortalama', status: 'Düşük' });
+      } else if (numValue > meanHigh) {
+        statuses.push({ type: 'Ortalama', status: 'Yüksek' });
+      } else {
+        statuses.push({ type: 'Ortalama', status: 'Normal' });
+      }
+    }
+
+    // 3. Min-Max Aralığı
+    if (guide.minValue !== 0 || guide.maxValue !== 0) {
+      if (numValue < guide.minValue) {
+        statuses.push({ type: 'Min-Max', status: 'Düşük' });
+      } else if (numValue > guide.maxValue) {
+        statuses.push({ type: 'Min-Max', status: 'Yüksek' });
+      } else {
+        statuses.push({ type: 'Min-Max', status: 'Normal' });
+      }
+    }
+
+    // 4. Güven Aralığı
+    if (guide.confidenceLow !== 0 || guide.confidenceHigh !== 0) {
+      if (numValue < guide.confidenceLow) {
+        statuses.push({ type: 'Güven', status: 'Düşük' });
+      } else if (numValue > guide.confidenceHigh) {
+        statuses.push({ type: 'Güven', status: 'Yüksek' });
+      } else {
+        statuses.push({ type: 'Güven', status: 'Normal' });
+      }
+    }
+
+    return statuses;
+  };
+
+  const StatusIcon = ({ status }) => {
+    switch (status) {
+      case 'Düşük':
+        return <Icon name="arrow-down" size={20} color="#28a745" />;
+      case 'Yüksek':
+        return <Icon name="arrow-up" size={20} color="#dc3545" />;
+      case 'Normal':
+        return <Icon name="arrow-left-right" size={20} color="#007bff" />;
+      default:
+        return null;
+    }
+  };
+
+  const handleTestSelect = (itemValue) => {
+    setSelectedTest(itemValue);
+  };
+
   if (loading) {
     return (
-      <View style={[commonStyles.container, styles.centerContainer]}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={[commonStyles.container, styles.container]}>
+    <View style={styles.mainContainer}>
       <View style={commonStyles.header}>
         <TouchableOpacity 
           style={commonStyles.backButton}
@@ -69,43 +232,79 @@ const TestResultsScreen = () => {
         <Text style={commonStyles.headerTitle}>Test Sonuçlarım</Text>
       </View>
 
-      <View style={styles.filterContainer}>
-        <Text style={styles.filterLabel}>Tetkik Türü:</Text>
-        <View style={styles.pickerContainer}>
-          <Picker
-            selectedValue={selectedTestType}
-            onValueChange={(itemValue) => setSelectedTestType(itemValue)}
-            style={styles.picker}
-          >
-            {TEST_TYPES.map((type) => (
-              <Picker.Item key={type.value} label={type.label} value={type.value} />
-            ))}
-          </Picker>
-        </View>
-      </View>
-
-      <ScrollView style={commonStyles.contentContainer}>
-        {filteredResults.length === 0 ? (
-          <View style={styles.noResultContainer}>
-            <Text style={styles.noResultText}>Henüz test sonucunuz bulunmamaktadır.</Text>
-          </View>
-        ) : (
-          filteredResults.map((test) => (
-            <View key={test.id} style={[commonStyles.card, styles.testCard]}>
-              <Text style={styles.testName}>{test.testName}</Text>
-              <Text style={styles.testDate}>Tarih: {test.date}</Text>
-              <Text style={styles.testStatus}>Durum: {test.status}</Text>
-              
-              <View style={styles.resultsContainer}>
-                {Object.entries(test.results).map(([key, value]) => (
-                  <View key={key} style={styles.resultRow}>
-                    <Text style={styles.resultLabel}>{key}:</Text>
-                    <Text style={styles.resultValue}>{value}</Text>
-                  </View>
-                ))}
+      <ScrollView style={styles.scrollContainer}>
+        {selectedTest ? (
+          <View style={styles.container}>
+            <View style={styles.pickerContainer}>
+              <View style={styles.pickerHeader}>
+                <Icon name="test-tube" size={24} color={colors.primary} />
+                <Text style={styles.pickerLabel}>Test Seçiniz</Text>
+              </View>
+              <View style={styles.pickerWrapper}>
+                <Picker
+                  selectedValue={selectedTest}
+                  onValueChange={handleTestSelect}
+                  style={styles.picker}
+                  dropdownIconColor={colors.primary}
+                >
+                  <Picker.Item 
+                    label="Lütfen bir test seçiniz..." 
+                    value="" 
+                    style={styles.placeholderItem}
+                    color="#999"
+                  />
+                  {uniqueTestNames.map((test, index) => (
+                    <Picker.Item 
+                      key={index} 
+                      label={test} 
+                      value={test} 
+                      color={colors.primary}
+                      style={styles.pickerItem}
+                    />
+                  ))}
+                </Picker>
               </View>
             </View>
-          ))
+            {testResults.map((test, index) => (
+              test.tests.filter(t => t.testName === selectedTest).map((testItem, testIndex) => (
+                <View key={`${index}-${testIndex}`} style={styles.testCard}>
+                  <View style={styles.testHeader}>
+                    <View>
+                      <Text style={styles.testName}>{testItem.testName}</Text>
+                      <Text style={styles.testDate}>
+                        Numune Tarihi: {formatDate(test.sampleTime)}
+                      </Text>
+                    </View>
+                    <Text style={styles.testValue}>
+                      {testItem.testValue}
+                    </Text>
+                  </View>
+                  {guideResults && guideResults.map((guide, guideIndex) => (
+                    <View key={guideIndex} style={styles.guideResultSection}>
+                      <Text style={styles.guideResultTitle}>
+                        {guide.guideName} ({guide.ageRange})
+                      </Text>
+                      <View style={styles.statusContainer}>
+                        {getTestStatus(testItem.testValue, guide).map((status, statusIndex) => (
+                          <View key={`${guideIndex}-${statusIndex}`} style={styles.statusRow}>
+                            <Text style={styles.statusType}>{status.type}:</Text>
+                            <StatusIcon status={status.status} />
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              ))
+            ))}
+          </View>
+        ) : (
+          <View style={styles.noSelectionContainer}>
+            <Icon name="test-tube" size={50} color={colors.primary} />
+            <Text style={styles.noSelectionText}>
+              Lütfen bir test seçiniz
+            </Text>
+          </View>
         )}
       </ScrollView>
     </View>
@@ -113,85 +312,155 @@ const TestResultsScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  mainContainer: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  scrollContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  centerContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  filterContainer: {
     padding: 15,
-    backgroundColor: '#f5f5f5',
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  filterLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginRight: 10,
-    color: '#333',
   },
   pickerContainer: {
-    flex: 1,
+    marginBottom: 20,
     backgroundColor: '#fff',
-    borderRadius: 8,
+    borderRadius: 15,
+    padding: 15,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingHorizontal: 5,
+  },
+  pickerLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.primary,
+    marginLeft: 10,
+  },
+  pickerWrapper: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: colors.primary,
+    borderColor: '#e0e0e0',
     overflow: 'hidden',
   },
   picker: {
-    height: 40,
+    height: 50,
+    width: '100%',
+  },
+  pickerItem: {
+    fontSize: 16,
+    fontFamily: 'System',
+  },
+  placeholderItem: {
+    fontSize: 16,
+    fontFamily: 'System',
+    fontStyle: 'italic',
   },
   testCard: {
+    backgroundColor: '#fff',
+    borderRadius: 15,
     padding: 15,
     marginBottom: 15,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  testHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
   testName: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: colors.primary,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   testDate: {
     fontSize: 14,
     color: '#666',
-    marginBottom: 4,
   },
-  testStatus: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 12,
+  testValue: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: colors.primary,
   },
-  resultsContainer: {
-    marginTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    paddingTop: 8,
+  guideResultSection: {
+    marginTop: 10,
+    padding: 12,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary,
   },
-  resultRow: {
+  guideResultTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#444',
+    marginBottom: 10,
+  },
+  statusContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 4,
   },
-  resultLabel: {
-    fontSize: 14,
-    color: '#333',
-    textTransform: 'capitalize',
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '48%',
+    marginBottom: 8,
+    padding: 8,
+    backgroundColor: '#fff',
+    borderRadius: 8,
   },
-  resultValue: {
+  statusType: {
     fontSize: 14,
     color: '#666',
-    fontWeight: '500',
+    marginRight: 8,
   },
-  noResultContainer: {
-    padding: 20,
+  noSelectionContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
+    marginTop: '50%',
   },
-  noResultText: {
+  noSelectionText: {
     fontSize: 16,
     color: '#666',
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#dc3545',
     textAlign: 'center',
   },
 });

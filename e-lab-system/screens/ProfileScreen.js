@@ -29,8 +29,6 @@ const ProfileScreen = () => {
         Alert.alert('Bilgi', 'Değişiklik yapmadınız.');
         return;
       }
-console.log(updateData)
-console.log(token)
       const response = await fetch('http://10.0.2.2:5000/api/users/update-profile', {
         method: 'PUT',
         headers: {

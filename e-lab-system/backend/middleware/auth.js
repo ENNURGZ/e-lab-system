@@ -3,14 +3,13 @@ const jwt = require('jsonwebtoken');
 const auth = async (req, res, next) => {
     try {
         const token = req.header('Authorization')?.replace('Bearer ', '');
-        console.log(token)
+        
         if (!token) {
             return res.status(401).json({ message: 'Yetkilendirme başarısız: Token bulunamadı' });
         }
 
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        console.log(decoded)
         
         // Token'dan gelen userId'yi req.user'a ata
         req.user = {
