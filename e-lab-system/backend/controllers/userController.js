@@ -114,6 +114,7 @@ const getUserProfile = async (req, res) => {
 // Kullanıcı profilini güncelle
 const updateProfile = async (req, res) => {
     try {
+        console.log(req.body)
         const { tcNo, firstName, lastName, email, newPassword } = req.body;
         const userId = req.user.id || req.user._id; // JWT'den gelen kullanıcı ID'si
 

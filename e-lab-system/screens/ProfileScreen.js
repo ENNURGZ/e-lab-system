@@ -6,7 +6,7 @@ import { commonStyles, colors } from '../styles/commonStyles';
 
 const ProfileScreen = () => {
   const navigation = useNavigation();
-  const { user, updateUser } = useApp();
+  const { user,token, updateUser } = useApp();
 
   const [tcNo, setTcNo] = useState(user?.tcNo || '');
   const [firstName, setFirstName] = useState(user?.firstName || '');
@@ -29,12 +29,13 @@ const ProfileScreen = () => {
         Alert.alert('Bilgi', 'Değişiklik yapmadınız.');
         return;
       }
-
+console.log(updateData)
+console.log(token)
       const response = await fetch('http://10.0.2.2:5000/api/users/update-profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.token}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(updateData)
       });

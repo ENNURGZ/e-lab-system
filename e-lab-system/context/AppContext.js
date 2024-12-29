@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AppContext = createContext();
@@ -7,6 +7,10 @@ export const AppProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [token, setToken] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        loadUserData();
+    }, []);
 
     // Kullanıcı girişi
     const login = async (userData, userToken) => {
