@@ -15,7 +15,7 @@ const testSchema = new mongoose.Schema({
   },
   gender: {
     type: String,
-    enum: ['erkek', 'kadın'],
+    enum: ['erkek', 'kadin'],
     required: true,
   },
   birthPlace: {

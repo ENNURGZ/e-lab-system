@@ -503,8 +503,8 @@ const TestQueryScreen = () => {
                         {(guide.geometricMean - (2 * guide.geometricSD)).toFixed(2)} - {(guide.geometricMean + (2 * guide.geometricSD)).toFixed(2)}
                       </Text>
                       <Icon 
-                        name={getStatusIcon(testResult, guide.geometricMean - (2 * guide.geometricSD), guide.geometricMean + (2 * guide.geometricSD))} 
-                        size={20} 
+                        name={getStatusIcon(testResult, guide.geometricMean - (2 * guide.geometricSD), guide.geometricMean + (2 * guide.geometricSD))}
+                        size={20}
                         color={getStatusColor(testResult, guide.geometricMean - (2 * guide.geometricSD), guide.geometricMean + (2 * guide.geometricSD))}
                       />
                     </View>
@@ -518,8 +518,8 @@ const TestQueryScreen = () => {
                         {(guide.mean - (2 * guide.sd)).toFixed(2)} - {(guide.mean + (2 * guide.sd)).toFixed(2)}
                       </Text>
                       <Icon 
-                        name={getStatusIcon(testResult, guide.mean - (2 * guide.sd), guide.mean + (2 * guide.sd))} 
-                        size={20} 
+                        name={getStatusIcon(testResult, guide.mean - (2 * guide.sd), guide.mean + (2 * guide.sd))}
+                        size={20}
                         color={getStatusColor(testResult, guide.mean - (2 * guide.sd), guide.mean + (2 * guide.sd))}
                       />
                     </View>
@@ -533,8 +533,8 @@ const TestQueryScreen = () => {
                         {guide.minValue} - {guide.maxValue}
                       </Text>
                       <Icon 
-                        name={getStatusIcon(testResult, guide.minValue, guide.maxValue)} 
-                        size={20} 
+                        name={getStatusIcon(testResult, guide.minValue, guide.maxValue)}
+                        size={20}
                         color={getStatusColor(testResult, guide.minValue, guide.maxValue)}
                       />
                     </View>
@@ -548,8 +548,8 @@ const TestQueryScreen = () => {
                         {guide.confidenceLow} - {guide.confidenceHigh}
                       </Text>
                       <Icon 
-                        name={getStatusIcon(testResult, guide.confidenceLow, guide.confidenceHigh)} 
-                        size={20} 
+                        name={getStatusIcon(testResult, guide.confidenceLow, guide.confidenceHigh)}
+                        size={20}
                         color={getStatusColor(testResult, guide.confidenceLow, guide.confidenceHigh)}
                       />
                     </View>
@@ -570,57 +570,96 @@ const TestQueryScreen = () => {
       {renderPatientSearch()}
       {patientInfo && (
         <View style={styles.patientInfoContainer}>
-          <Text style={styles.patientInfoTitle}>Hasta Bilgileri</Text>
-          <Text style={styles.ageText}>Hasta Yaşı: {calculateAge()} ay</Text>
-          <View style={styles.patientInfoRow}>
-            <Text style={styles.patientInfoLabel}>Ad Soyad:</Text>
-            <Text style={styles.patientInfoValue}>{patientInfo.fullName}</Text>
+          <View style={styles.patientInfoHeader}>
+            <Icon name="user" size={24} color="#3498db" />
+            <Text style={styles.patientInfoTitle}>Hasta Bilgileri</Text>
           </View>
-          <View style={styles.patientInfoRow}>
-            <Text style={styles.patientInfoLabel}>Doğum Tarihi:</Text>
-            <Text style={styles.patientInfoValue}>
-              {new Date(patientInfo.birthDate).toLocaleDateString('tr-TR')}
-            </Text>
-          </View>
-          <View style={styles.patientInfoRow}>
-            <Text style={styles.patientInfoLabel}>Cinsiyet:</Text>
-            <Text style={styles.patientInfoValue}>{patientInfo.gender}</Text>
-          </View>
-          <View style={styles.patientInfoRow}>
-            <Text style={styles.patientInfoLabel}>Doğum Yeri:</Text>
-            <Text style={styles.patientInfoValue}>{patientInfo.birthPlace}</Text>
+          
+          <View style={styles.patientInfoCard}>
+            <View style={styles.patientInfoRow}>
+              <View style={styles.infoIconContainer}>
+                <Icon name="id-card" size={20} color="#3498db" />
+              </View>
+              <View style={styles.infoTextContainer}>
+                <Text style={styles.patientInfoLabel}>Ad Soyad:</Text>
+                <Text style={styles.patientInfoValue}>{patientInfo.fullName}</Text>
+              </View>
+            </View>
+
+            <View style={styles.patientInfoRow}>
+              <View style={styles.infoIconContainer}>
+                <Icon name="calendar" size={20} color="#2ecc71" />
+              </View>
+              <View style={styles.infoTextContainer}>
+                <Text style={styles.patientInfoLabel}>Doğum Tarihi:</Text>
+                <Text style={styles.patientInfoValue}>
+                  {new Date(patientInfo.birthDate).toLocaleDateString('tr-TR')}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.patientInfoRow}>
+              <View style={styles.infoIconContainer}>
+                <Icon name="venus-mars" size={20} color="#e74c3c" />
+              </View>
+              <View style={styles.infoTextContainer}>
+                <Text style={styles.patientInfoLabel}>Cinsiyet:</Text>
+                <Text style={styles.patientInfoValue}>{patientInfo.gender}</Text>
+              </View>
+            </View>
+
+            <View style={styles.patientInfoRow}>
+              <View style={styles.infoIconContainer}>
+                <Icon name="map-marker" size={20} color="#9b59b6" />
+              </View>
+              <View style={styles.infoTextContainer}>
+                <Text style={styles.patientInfoLabel}>Doğum Yeri:</Text>
+                <Text style={styles.patientInfoValue}>{patientInfo.birthPlace}</Text>
+              </View>
+            </View>
+
+            <View style={styles.patientInfoRow}>
+              <View style={styles.infoIconContainer}>
+                <Icon name="clock-o" size={20} color="#f1c40f" />
+              </View>
+              <View style={styles.infoTextContainer}>
+                <Text style={styles.patientInfoLabel}>Yaş:</Text>
+                <Text style={styles.patientInfoValue}>{calculateAge()} ay</Text>
+              </View>
+            </View>
           </View>
         </View>
       )}
 
       {testHistory && testHistory.length > 0 && (
         <View style={styles.testHistoryContainer}>
-          <Text style={styles.testHistoryTitle}>Test Geçmişi</Text>
-          
-          <View style={styles.testPickerContainer}>
+          <View style={styles.testHistoryHeader}>
+            <Icon name="flask" size={24} color="#3498db" />
+            <Text style={styles.testHistoryTitle}>Test Geçmişi</Text>
+          </View>
+
+          <View style={[styles.testPickerContainer, styles.pickerCard]}>
             <Picker
               selectedValue={selectedTests}
               style={styles.testPicker}
-              onValueChange={(itemValue) => setSelectedTests([itemValue])}
+              onValueChange={(itemValue) => setSelectedTests(itemValue === "" ? [] : [itemValue])}
             >
               <Picker.Item label="Tüm Testler" value="" />
-              {Array.from(new Set(testHistory.flatMap(record => 
-                record.tests.map(test => test.testName)
-              ))).map((testName) => (
+              {availableTests.map((testName) => (
                 <Picker.Item key={testName} label={testName} value={testName} />
               ))}
             </Picker>
           </View>
 
           {testHistory
-            .filter(record => !selectedTests.length || record.tests.some(test => selectedTests.includes(test.testName)))
+            .filter(record => selectedTests.length === 0 || record.tests.some(test => selectedTests.includes(test.testName)))
             .map((record, index) => (
             <View key={index} style={styles.testHistoryCard}>
               <Text style={styles.testHistoryDate}>
                 Örnek Alım Zamanı: {new Date(record.sampleTime).toLocaleDateString('tr-TR')}
               </Text>
               {record.tests
-                .filter(test => !selectedTests.length || selectedTests.includes(test.testName))
+                .filter(test => selectedTests.length === 0 || selectedTests.includes(test.testName))
                 .map((test, testIndex) => (
                 <View key={testIndex} style={styles.testHistoryTest}>
                   <View style={styles.testHeaderRow}>
@@ -635,7 +674,8 @@ const TestQueryScreen = () => {
                           <Text style={styles.guideTitle}>
                             {guide.guideName} ({guide.ageRange})
                           </Text>
-                          {guide.geometricMean && (
+                          {guide.geometricMean && guide.geometricSD && 
+                           guide.geometricMean !== 0 && guide.geometricSD !== 0 && (
                             <View style={styles.guideRow}>
                               <View style={styles.guideValueContainer}>
                                 <Text style={styles.guideLabel}>Geometrik:</Text>
@@ -643,15 +683,17 @@ const TestQueryScreen = () => {
                                   {guide.geometricMean} ± {guide.geometricSD}
                                 </Text>
                               </View>
-                              <Text style={[
-                                styles.statusText,
-                                { color: getStatusColor(checkValueStatus(test.testValue, guide, 'geometric')) }
-                              ]}>
-                                {checkValueStatus(test.testValue, guide, 'geometric')}
-                              </Text>
+                              <View style={styles.statusContainer}>
+                                <Icon 
+                                  name={getStatusIcon(test.testValue, guide.geometricMean - (2 * guide.geometricSD), guide.geometricMean + (2 * guide.geometricSD))}
+                                  size={20}
+                                  color={getStatusColor(test.testValue, guide.geometricMean - (2 * guide.geometricSD), guide.geometricMean + (2 * guide.geometricSD))}
+                                />
+                              </View>
                             </View>
                           )}
-                          {guide.mean && (
+                          {guide.mean && guide.sd && 
+                           guide.mean !== 0 && guide.sd !== 0 && (
                             <View style={styles.guideRow}>
                               <View style={styles.guideValueContainer}>
                                 <Text style={styles.guideLabel}>Ortalama:</Text>
@@ -659,15 +701,17 @@ const TestQueryScreen = () => {
                                   {guide.mean} ± {guide.sd}
                                 </Text>
                               </View>
-                              <Text style={[
-                                styles.statusText,
-                                { color: getStatusColor(checkValueStatus(test.testValue, guide, 'mean')) }
-                              ]}>
-                                {checkValueStatus(test.testValue, guide, 'mean')}
-                              </Text>
+                              <View style={styles.statusContainer}>
+                                <Icon 
+                                  name={getStatusIcon(test.testValue, guide.mean - (2 * guide.sd), guide.mean + (2 * guide.sd))}
+                                  size={20}
+                                  color={getStatusColor(test.testValue, guide.mean - (2 * guide.sd), guide.mean + (2 * guide.sd))}
+                                />
+                              </View>
                             </View>
                           )}
-                          {(guide.minValue !== undefined) && (
+                          {(guide.minValue !== undefined) && (guide.maxValue !== undefined) && 
+                           guide.minValue !== 0 && guide.maxValue !== 0 && (
                             <View style={styles.guideRow}>
                               <View style={styles.guideValueContainer}>
                                 <Text style={styles.guideLabel}>Min-Max:</Text>
@@ -675,15 +719,17 @@ const TestQueryScreen = () => {
                                   {guide.minValue} - {guide.maxValue}
                                 </Text>
                               </View>
-                              <Text style={[
-                                styles.statusText,
-                                { color: getStatusColor(checkValueStatus(test.testValue, guide, 'minmax')) }
-                              ]}>
-                                {checkValueStatus(test.testValue, guide, 'minmax')}
-                              </Text>
+                              <View style={styles.statusContainer}>
+                                <Icon 
+                                  name={getStatusIcon(test.testValue, guide.minValue, guide.maxValue)}
+                                  size={20}
+                                  color={getStatusColor(test.testValue, guide.minValue, guide.maxValue)}
+                                />
+                              </View>
                             </View>
                           )}
-                          {(guide.confidenceLow !== undefined) && (
+                          {(guide.confidenceLow !== undefined) && (guide.confidenceHigh !== undefined) && 
+                           guide.confidenceLow !== 0 && guide.confidenceHigh !== 0 && (
                             <View style={styles.guideRow}>
                               <View style={styles.guideValueContainer}>
                                 <Text style={styles.guideLabel}>Güven:</Text>
@@ -691,12 +737,13 @@ const TestQueryScreen = () => {
                                   {guide.confidenceLow} - {guide.confidenceHigh}
                                 </Text>
                               </View>
-                              <Text style={[
-                                styles.statusText,
-                                { color: getStatusColor(checkValueStatus(test.testValue, guide, 'confidence')) }
-                              ]}>
-                                {checkValueStatus(test.testValue, guide, 'confidence')}
-                              </Text>
+                              <View style={styles.statusContainer}>
+                                <Icon 
+                                  name={getStatusIcon(test.testValue, guide.confidenceLow, guide.confidenceHigh)}
+                                  size={20}
+                                  color={getStatusColor(test.testValue, guide.confidenceLow, guide.confidenceHigh)}
+                                />
+                              </View>
                             </View>
                           )}
                         </View>
@@ -735,22 +782,17 @@ const TestQueryScreen = () => {
   );
 
   const getStatusIcon = (value, lower, upper) => {
-    if (value < lower) return 'arrow-down';
-    if (value > upper) return 'arrow-up';
-    return 'check';
+    const numericValue = parseFloat(value);
+    if (numericValue < lower) return 'arrow-down';  // Düşük için aşağı ok
+    if (numericValue > upper) return 'arrow-up';    // Yüksek için yukarı ok
+    return 'arrows-h';                              // Normal için yatay çift ok
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Yüksek':
-        return '#e74c3c';
-      case 'Düşük':
-        return '#3498db';
-      case 'Normal':
-        return '#2ecc71';
-      default:
-        return '#95a5a6';
-    }
+  const getStatusColor = (value, lower, upper) => {
+    const numericValue = parseFloat(value);
+    if (numericValue < lower) return '#2ecc71';     // Yeşil (Düşük)
+    if (numericValue > upper) return '#e74c3c';     // Kırmızı (Yüksek)
+    return '#3498db';                               // Mavi (Normal)
   };
 
   const checkTestStatus = (guide, testValue) => {
@@ -1215,46 +1257,91 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   patientInfoContainer: {
-    backgroundColor: '#fff',
+    marginTop: 20,
     padding: 15,
+    backgroundColor: '#fff',
     borderRadius: 10,
-    marginTop: 15,
     elevation: 3,
   },
-  infoRow: {
+  patientInfoHeader: {
     flexDirection: 'row',
-    marginBottom: 8,
     alignItems: 'center',
+    marginBottom: 15,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
-  testResultsContainer: {
-    marginTop: 15,
-    paddingTop: 15,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
-  testRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  testName: {
+  patientInfoTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#666',
+    color: '#2c3e50',
+    marginLeft: 10,
   },
-  testValue: {
-    color: '#333',
+  patientInfoCard: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 15,
   },
-  sampleTime: {
-    marginTop: 10,
-    fontStyle: 'italic',
-    color: '#666',
+  patientInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
-  testInfoContainer: {
-    marginVertical: 8,
+  infoIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f8f9fa',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
-  testHistoryScroll: {
-    maxHeight: 400,
+  infoTextContainer: {
+    flex: 1,
+  },
+  patientInfoLabel: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    marginBottom: 2,
+  },
+  patientInfoValue: {
+    fontSize: 16,
+    color: '#2c3e50',
+    fontWeight: '500',
+  },
+  testHistoryContainer: {
+    marginTop: 20,
+    padding: 15,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    elevation: 3,
+  },
+  testHistoryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  testHistoryTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    marginLeft: 10,
+  },
+  pickerCard: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  testPicker: {
+    height: 50,
   },
   testHistoryCard: {
     backgroundColor: '#fff',
@@ -1262,15 +1349,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 10,
     elevation: 2,
-  },
-  testHistoryTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-  },
-  testHistoryRecord: {
-    marginBottom: 10,
   },
   testHistoryDate: {
     fontSize: 14,
@@ -1288,26 +1366,6 @@ const styles = StyleSheet.create({
   testHistoryTestValue: {
     fontSize: 14,
     color: '#666',
-  },
-  patientInfoTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-  },
-  patientInfoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  patientInfoLabel: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: 'bold',
-  },
-  patientInfoValue: {
-    fontSize: 14,
-    color: '#333',
   },
   patientQueryContainer: {
     padding: 20,
@@ -1374,9 +1432,6 @@ const styles = StyleSheet.create({
   rangeValue: {
     fontSize: 14,
     color: '#666',
-  },
-  testHistoryContainer: {
-    marginBottom: 15,
   },
   testSelectionContainer: {
     marginBottom: 15,
@@ -1554,6 +1609,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    width: 30,
   },
 });
 
