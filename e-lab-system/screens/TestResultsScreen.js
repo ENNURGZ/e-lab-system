@@ -15,7 +15,7 @@ const TestResultsScreen = () => {
   const [testResults, setTestResults] = useState([]);
   const [uniqueTestNames, setUniqueTestNames] = useState([]);
   const [selectedTest, setSelectedTest] = useState('');
-  const [guideResults, setGuideResults] = useState(null);
+  const [guideResults, setGuideResults] = useState({});  
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -23,10 +23,16 @@ const TestResultsScreen = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedTest) {
-      checkGuideValues();
+    if (testResults.length > 0) {
+      const allTests = new Set(testResults.flatMap(record => 
+        record.tests.map(t => t.testName)
+      ));
+      
+      allTests.forEach(testName => {
+        checkGuideValues(testName);
+      });
     }
-  }, [selectedTest]);
+  }, [testResults]);
 
   const fetchTestResults = async () => {
     try {
@@ -47,7 +53,6 @@ const TestResultsScreen = () => {
         const testHistory = result.data.testHistory || [];
         setTestResults(testHistory);
 
-        // Benzersiz test adlarını çıkar
         const testNames = [...new Set(
           testHistory.flatMap(record => 
             record.tests.map(t => t.testName)
@@ -55,11 +60,6 @@ const TestResultsScreen = () => {
         )].sort();
         
         setUniqueTestNames(testNames);
-        
-        // İlk testi otomatik seç
-        if (testNames.length > 0 && !selectedTest) {
-          setSelectedTest(testNames[0]);
-        }
       } else {
         throw new Error(result.message || 'Test sonuçları alınamadı');
       }
@@ -78,17 +78,16 @@ const TestResultsScreen = () => {
            (today.getMonth() - birth.getMonth());
   };
 
-  const checkGuideValues = async () => {
-    if (!selectedTest) return;
+  const checkGuideValues = async (testName) => {
+    if (!testName) return;
 
     try {
       setLoading(true);
       setError(null);
 
-      // Seçili testin son değerini bul
       const latestResult = testResults
         .flatMap(record => record.tests)
-        .find(test => test.testName === selectedTest);
+        .find(test => test.testName === testName);
 
       if (!latestResult) {
         throw new Error('Test sonucu bulunamadı');
@@ -103,7 +102,7 @@ const TestResultsScreen = () => {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          testName: selectedTest,
+          testName: testName,
           ageInMonths: ageInMonths,
           testValue: parseFloat(latestResult.testValue)
         })
@@ -112,7 +111,10 @@ const TestResultsScreen = () => {
       const result = await response.json();
 
       if (response.ok && result.success) {
-        setGuideResults(result.data);
+        setGuideResults(prev => ({
+          ...prev,
+          [testName]: result.data
+        }));
       } else {
         throw new Error(result.message || 'Kılavuz değerleri alınamadı');
       }
@@ -135,16 +137,13 @@ const TestResultsScreen = () => {
     });
   };
 
-  // Test sonucunun durumunu belirle
   const getTestStatus = (value, guide) => {
     const numValue = parseFloat(value);
     
     if (isNaN(numValue)) return 'Geçersiz Değer';
     
-    // Tüm aralıklar için durumları kontrol et
     const statuses = [];
 
-    // 1. Geometrik Ortalama ± 2SD
     if (guide.geometricMean !== 0 || guide.geometricSD !== 0) {
       const geometricLow = guide.geometricMean - (2 * guide.geometricSD);
       const geometricHigh = guide.geometricMean + (2 * guide.geometricSD);
@@ -157,7 +156,6 @@ const TestResultsScreen = () => {
       }
     }
 
-    // 2. Ortalama ± 2SD
     if (guide.mean !== 0 || guide.sd !== 0) {
       const meanLow = guide.mean - (2 * guide.sd);
       const meanHigh = guide.mean + (2 * guide.sd);
@@ -170,7 +168,6 @@ const TestResultsScreen = () => {
       }
     }
 
-    // 3. Min-Max Aralığı
     if (guide.minValue !== 0 || guide.maxValue !== 0) {
       if (numValue < guide.minValue) {
         statuses.push({ type: 'Min-Max', status: 'Düşük' });
@@ -181,7 +178,6 @@ const TestResultsScreen = () => {
       }
     }
 
-    // 4. Güven Aralığı
     if (guide.confidenceLow !== 0 || guide.confidenceHigh !== 0) {
       if (numValue < guide.confidenceLow) {
         statuses.push({ type: 'Güven', status: 'Düşük' });
@@ -233,40 +229,43 @@ const TestResultsScreen = () => {
       </View>
 
       <ScrollView style={styles.scrollContainer}>
-        {selectedTest ? (
-          <View style={styles.container}>
-            <View style={styles.pickerContainer}>
-              <View style={styles.pickerHeader}>
-                <Icon name="test-tube" size={24} color={colors.primary} />
-                <Text style={styles.pickerLabel}>Test Seçiniz</Text>
-              </View>
-              <View style={styles.pickerWrapper}>
-                <Picker
-                  selectedValue={selectedTest}
-                  onValueChange={handleTestSelect}
-                  style={styles.picker}
-                  dropdownIconColor={colors.primary}
-                >
-                  <Picker.Item 
-                    label="Lütfen bir test seçiniz..." 
-                    value="" 
-                    style={styles.placeholderItem}
-                    color="#999"
-                  />
-                  {uniqueTestNames.map((test, index) => (
-                    <Picker.Item 
-                      key={index} 
-                      label={test} 
-                      value={test} 
-                      color={colors.primary}
-                      style={styles.pickerItem}
-                    />
-                  ))}
-                </Picker>
-              </View>
+        <View style={styles.container}>
+          <View style={styles.pickerContainer}>
+            <View style={styles.pickerHeader}>
+              <Icon name="test-tube" size={24} color={colors.primary} />
+              <Text style={styles.pickerLabel}>Test Seçiniz</Text>
             </View>
-            {testResults.map((test, index) => (
-              test.tests.filter(t => t.testName === selectedTest).map((testItem, testIndex) => (
+            <View style={styles.pickerWrapper}>
+              <Picker
+                selectedValue={selectedTest}
+                onValueChange={handleTestSelect}
+                style={styles.picker}
+                dropdownIconColor={colors.primary}
+              >
+                <Picker.Item 
+                  label="Tüm Testler" 
+                  value="" 
+                  style={styles.pickerItem}
+                  color={colors.primary}
+                />
+                {uniqueTestNames.map((test, index) => (
+                  <Picker.Item 
+                    key={index} 
+                    label={test} 
+                    value={test} 
+                    color={colors.primary}
+                    style={styles.pickerItem}
+                  />
+                ))}
+              </Picker>
+            </View>
+          </View>
+
+          {testResults.map((test, index) => (
+            <View key={index}>
+              {test.tests
+                .filter(t => !selectedTest || t.testName === selectedTest)
+                .map((testItem, testIndex) => (
                 <View key={`${index}-${testIndex}`} style={styles.testCard}>
                   <View style={styles.testHeader}>
                     <View>
@@ -279,7 +278,7 @@ const TestResultsScreen = () => {
                       {testItem.testValue}
                     </Text>
                   </View>
-                  {guideResults && guideResults.map((guide, guideIndex) => (
+                  {guideResults[testItem.testName] && guideResults[testItem.testName].map((guide, guideIndex) => (
                     <View key={guideIndex} style={styles.guideResultSection}>
                       <Text style={styles.guideResultTitle}>
                         {guide.guideName} ({guide.ageRange})
@@ -295,17 +294,10 @@ const TestResultsScreen = () => {
                     </View>
                   ))}
                 </View>
-              ))
-            ))}
-          </View>
-        ) : (
-          <View style={styles.noSelectionContainer}>
-            <Icon name="test-tube" size={50} color={colors.primary} />
-            <Text style={styles.noSelectionText}>
-              Lütfen bir test seçiniz
-            </Text>
-          </View>
-        )}
+              ))}
+            </View>
+          ))}
+        </View>
       </ScrollView>
     </View>
   );
