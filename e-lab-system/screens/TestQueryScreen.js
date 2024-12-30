@@ -31,6 +31,8 @@ const TestQueryScreen = () => {
   const [availableTests, setAvailableTests] = useState([]); // Mevcut test adları
   const [selectedTests, setSelectedTests] = useState([]); // Seçili test adları
   const [referenceValues, setReferenceValues] = useState({}); // Test referans değerleri için
+  const [testStatuses, setTestStatuses] = useState({});
+  const [referenceRanges, setReferenceRanges] = useState({});
 
   const onDateChange = (event, selectedDate) => {
     const currentDate = selectedDate || birthDate;
@@ -39,8 +41,10 @@ const TestQueryScreen = () => {
   };
 
   const calculateAge = () => {
+    if (!patientInfo || !patientInfo.birthDate) return 0;
+    
     const today = new Date();
-    const birthDateObj = new Date(birthDate);
+    const birthDateObj = new Date(patientInfo.birthDate);
     
     let months = (today.getFullYear() - birthDateObj.getFullYear()) * 12;
     months -= birthDateObj.getMonth();
@@ -139,11 +143,12 @@ const TestQueryScreen = () => {
         throw new Error('Test değerlendirme hatası');
       }
 
-      const data = await response.json();
-      if (data.success) {
-        setGuideResults(data.data);
+      const result = await response.json();
+      
+      if (!result.success || !result.data || result.data.length === 0) {
+        setGuideResults(null);
       } else {
-        throw new Error(data.message || 'Test değerlendirilemedi');
+        setGuideResults(result.data);
       }
     } catch (error) {
       console.error('Test değerlendirme hatası:', error);
@@ -259,6 +264,130 @@ const TestQueryScreen = () => {
       setLoading(false);
     }
   };
+
+  const checkReferenceValue = async (testName, testValue) => {
+    const age = calculateAge();
+    try {
+      console.log(`Referans değeri kontrol ediliyor - Test: ${testName}, Değer: ${testValue}, Yaş: ${age}`);
+      
+      const response = await fetch(`${API_URL}/api/guides/check`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          testName,
+          ageInMonths: age,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('API yanıt hatası:', response.status, response.statusText);
+        throw new Error('Referans değerleri alınamadı');
+      }
+
+      const result = await response.json();
+      console.log('API yanıtı:', result);
+
+      if (!result.success || !result.data || result.data.length === 0) {
+        return 'Belirsiz';
+      }
+
+      // Tüm kılavuzları sakla
+      setReferenceRanges(prev => ({
+        ...prev,
+        [`${testName}`]: result.data
+      }));
+
+      // İlk kılavuza göre durumu belirle (gerekirse değiştirilebilir)
+      const guide = result.data[0];
+      const numericValue = parseFloat(testValue);
+      let status = 'Normal';
+
+      // Referans değerlerini sakla
+      if (guide.geometricMean && guide.geometricSD) {
+        const lower = guide.geometricMean - (2 * guide.geometricSD);
+        const upper = guide.geometricMean + (2 * guide.geometricSD);
+        if (numericValue < lower) status = 'Düşük';
+        else if (numericValue > upper) status = 'Yüksek';
+      }
+      else if (guide.mean && guide.sd) {
+        const lower = guide.mean - (2 * guide.sd);
+        const upper = guide.mean + (2 * guide.sd);
+        if (numericValue < lower) status = 'Düşük';
+        else if (numericValue > upper) status = 'Yüksek';
+      }
+      else if (guide.minValue !== undefined && guide.maxValue !== undefined) {
+        if (numericValue < guide.minValue) status = 'Düşük';
+        else if (numericValue > guide.maxValue) status = 'Yüksek';
+      }
+      else if (guide.confidenceLow !== undefined && guide.confidenceHigh !== undefined) {
+        if (numericValue < guide.confidenceLow) status = 'Düşük';
+        else if (numericValue > guide.confidenceHigh) status = 'Yüksek';
+      }
+
+      return status;
+    } catch (error) {
+      console.error('Referans değer kontrolü hatası:', error);
+      return 'Belirsiz';
+    }
+  };
+
+  const checkValueStatus = (value, reference, type) => {
+    const numericValue = parseFloat(value);
+    let status = 'Normal';
+    
+    switch(type) {
+      case 'geometric':
+        if (reference.geometricMean && reference.geometricSD) {
+          const lower = reference.geometricMean - (2 * reference.geometricSD);
+          const upper = reference.geometricMean + (2 * reference.geometricSD);
+          if (numericValue < lower) status = 'Düşük';
+          else if (numericValue > upper) status = 'Yüksek';
+        }
+        break;
+      case 'mean':
+        if (reference.mean && reference.sd) {
+          const lower = reference.mean - (2 * reference.sd);
+          const upper = reference.mean + (2 * reference.sd);
+          if (numericValue < lower) status = 'Düşük';
+          else if (numericValue > upper) status = 'Yüksek';
+        }
+        break;
+      case 'minmax':
+        if (reference.minValue !== undefined && reference.maxValue !== undefined) {
+          if (numericValue < reference.minValue) status = 'Düşük';
+          else if (numericValue > reference.maxValue) status = 'Yüksek';
+        }
+        break;
+      case 'confidence':
+        if (reference.confidenceLow !== undefined && reference.confidenceHigh !== undefined) {
+          if (numericValue < reference.confidenceLow) status = 'Düşük';
+          else if (numericValue > reference.confidenceHigh) status = 'Yüksek';
+        }
+        break;
+    }
+    
+    return status;
+  };
+
+  useEffect(() => {
+    const checkAllTestResults = async () => {
+      if (!testHistory || !testHistory.length) return;
+
+      const newStatuses = {};
+      for (const record of testHistory) {
+        for (const test of record.tests) {
+          const status = await checkReferenceValue(test.testName, test.testValue);
+          newStatuses[`${record.sampleTime}-${test.testName}`] = status;
+        }
+      }
+      setTestStatuses(newStatuses);
+    };
+
+    checkAllTestResults();
+  }, [testHistory]);
 
   const renderTestQuery = () => (
     <>
@@ -442,6 +571,7 @@ const TestQueryScreen = () => {
       {patientInfo && (
         <View style={styles.patientInfoContainer}>
           <Text style={styles.patientInfoTitle}>Hasta Bilgileri</Text>
+          <Text style={styles.ageText}>Hasta Yaşı: {calculateAge()} ay</Text>
           <View style={styles.patientInfoRow}>
             <Text style={styles.patientInfoLabel}>Ad Soyad:</Text>
             <Text style={styles.patientInfoValue}>{patientInfo.fullName}</Text>
@@ -466,15 +596,113 @@ const TestQueryScreen = () => {
       {testHistory && testHistory.length > 0 && (
         <View style={styles.testHistoryContainer}>
           <Text style={styles.testHistoryTitle}>Test Geçmişi</Text>
-          {testHistory.map((record, index) => (
+          
+          <View style={styles.testPickerContainer}>
+            <Picker
+              selectedValue={selectedTests}
+              style={styles.testPicker}
+              onValueChange={(itemValue) => setSelectedTests([itemValue])}
+            >
+              <Picker.Item label="Tüm Testler" value="" />
+              {Array.from(new Set(testHistory.flatMap(record => 
+                record.tests.map(test => test.testName)
+              ))).map((testName) => (
+                <Picker.Item key={testName} label={testName} value={testName} />
+              ))}
+            </Picker>
+          </View>
+
+          {testHistory
+            .filter(record => !selectedTests.length || record.tests.some(test => selectedTests.includes(test.testName)))
+            .map((record, index) => (
             <View key={index} style={styles.testHistoryCard}>
               <Text style={styles.testHistoryDate}>
                 Örnek Alım Zamanı: {new Date(record.sampleTime).toLocaleDateString('tr-TR')}
               </Text>
-              {record.tests.map((test, testIndex) => (
+              {record.tests
+                .filter(test => !selectedTests.length || selectedTests.includes(test.testName))
+                .map((test, testIndex) => (
                 <View key={testIndex} style={styles.testHistoryTest}>
-                  <Text style={styles.testHistoryTestName}>{test.testName}</Text>
-                  <Text style={styles.testHistoryTestValue}>Sonuç: {test.testValue}</Text>
+                  <View style={styles.testHeaderRow}>
+                    <Text style={styles.testHistoryTestName}>{test.testName}</Text>
+                    <Text style={styles.testHistoryTestValue}>{test.testValue}</Text>
+                  </View>
+                  
+                  {testStatuses[`${record.sampleTime}-${test.testName}`] && referenceRanges[test.testName] && (
+                    <View>
+                      {referenceRanges[test.testName].map((guide, guideIndex) => (
+                        <View key={guideIndex} style={styles.guideContainer}>
+                          <Text style={styles.guideTitle}>
+                            {guide.guideName} ({guide.ageRange})
+                          </Text>
+                          {guide.geometricMean && (
+                            <View style={styles.guideRow}>
+                              <View style={styles.guideValueContainer}>
+                                <Text style={styles.guideLabel}>Geometrik:</Text>
+                                <Text style={styles.guideValue}>
+                                  {guide.geometricMean} ± {guide.geometricSD}
+                                </Text>
+                              </View>
+                              <Text style={[
+                                styles.statusText,
+                                { color: getStatusColor(checkValueStatus(test.testValue, guide, 'geometric')) }
+                              ]}>
+                                {checkValueStatus(test.testValue, guide, 'geometric')}
+                              </Text>
+                            </View>
+                          )}
+                          {guide.mean && (
+                            <View style={styles.guideRow}>
+                              <View style={styles.guideValueContainer}>
+                                <Text style={styles.guideLabel}>Ortalama:</Text>
+                                <Text style={styles.guideValue}>
+                                  {guide.mean} ± {guide.sd}
+                                </Text>
+                              </View>
+                              <Text style={[
+                                styles.statusText,
+                                { color: getStatusColor(checkValueStatus(test.testValue, guide, 'mean')) }
+                              ]}>
+                                {checkValueStatus(test.testValue, guide, 'mean')}
+                              </Text>
+                            </View>
+                          )}
+                          {(guide.minValue !== undefined) && (
+                            <View style={styles.guideRow}>
+                              <View style={styles.guideValueContainer}>
+                                <Text style={styles.guideLabel}>Min-Max:</Text>
+                                <Text style={styles.guideValue}>
+                                  {guide.minValue} - {guide.maxValue}
+                                </Text>
+                              </View>
+                              <Text style={[
+                                styles.statusText,
+                                { color: getStatusColor(checkValueStatus(test.testValue, guide, 'minmax')) }
+                              ]}>
+                                {checkValueStatus(test.testValue, guide, 'minmax')}
+                              </Text>
+                            </View>
+                          )}
+                          {(guide.confidenceLow !== undefined) && (
+                            <View style={styles.guideRow}>
+                              <View style={styles.guideValueContainer}>
+                                <Text style={styles.guideLabel}>Güven:</Text>
+                                <Text style={styles.guideValue}>
+                                  {guide.confidenceLow} - {guide.confidenceHigh}
+                                </Text>
+                              </View>
+                              <Text style={[
+                                styles.statusText,
+                                { color: getStatusColor(checkValueStatus(test.testValue, guide, 'confidence')) }
+                              ]}>
+                                {checkValueStatus(test.testValue, guide, 'confidence')}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      ))}
+                    </View>
+                  )}
                 </View>
               ))}
             </View>
@@ -512,10 +740,45 @@ const TestQueryScreen = () => {
     return 'check';
   };
 
-  const getStatusColor = (value, lower, upper) => {
-    if (value < lower) return '#e74c3c';
-    if (value > upper) return '#e74c3c';
-    return '#2ecc71';
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Yüksek':
+        return '#e74c3c';
+      case 'Düşük':
+        return '#3498db';
+      case 'Normal':
+        return '#2ecc71';
+      default:
+        return '#95a5a6';
+    }
+  };
+
+  const checkTestStatus = (guide, testValue) => {
+    const numericValue = parseFloat(testValue);
+    let status = 'Normal';
+
+    if (guide.geometricMean && guide.geometricSD) {
+      const lower = guide.geometricMean - (2 * guide.geometricSD);
+      const upper = guide.geometricMean + (2 * guide.geometricSD);
+      if (numericValue < lower) status = 'Düşük';
+      else if (numericValue > upper) status = 'Yüksek';
+    }
+    else if (guide.mean && guide.sd) {
+      const lower = guide.mean - (2 * guide.sd);
+      const upper = guide.mean + (2 * guide.sd);
+      if (numericValue < lower) status = 'Düşük';
+      else if (numericValue > upper) status = 'Yüksek';
+    }
+    else if (guide.minValue !== undefined && guide.maxValue !== undefined) {
+      if (numericValue < guide.minValue) status = 'Düşük';
+      else if (numericValue > guide.maxValue) status = 'Yüksek';
+    }
+    else if (guide.confidenceLow !== undefined && guide.confidenceHigh !== undefined) {
+      if (numericValue < guide.confidenceLow) status = 'Düşük';
+      else if (numericValue > guide.confidenceHigh) status = 'Yüksek';
+    }
+
+    return status;
   };
 
   const toggleTestSelection = (testName) => {
@@ -792,15 +1055,11 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   guideContainer: {
-    marginBottom: 20,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 15,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+    marginBottom: 8,
   },
   guideNameText: {
     fontSize: 16,
@@ -849,20 +1108,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     fontWeight: '600',
-  },
-  normalBg: {
-    backgroundColor: '#2ecc71',
-  },
-  yuksekBg: {
-    backgroundColor: '#e74c3c',
-  },
-  alcakBg: {
-    backgroundColor: '#3498db',
-  },
-  rangeText: {
-    fontSize: 13,
-    color: colors.text.secondary,
-    textAlign: 'center',
   },
   basicInfoContainer: {
     flexDirection: 'row',
@@ -990,6 +1235,7 @@ const styles = StyleSheet.create({
   testRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 8,
   },
   testName: {
@@ -1006,11 +1252,6 @@ const styles = StyleSheet.create({
   },
   testInfoContainer: {
     marginVertical: 8,
-  },
-  testDivider: {
-    height: 1,
-    backgroundColor: '#eee',
-    marginTop: 8,
   },
   testHistoryScroll: {
     maxHeight: 400,
@@ -1125,7 +1366,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
   },
   rangeLabel: {
     fontSize: 14,
@@ -1234,6 +1474,86 @@ const styles = StyleSheet.create({
     color: '#6c757d',
     fontStyle: 'italic',
     marginTop: 2,
+  },
+  testPickerContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 5,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  testPicker: {
+    height: 50,
+    width: '100%',
+  },
+  ageText: {
+    fontSize: 16,
+    color: colors.primary,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  testResultRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  testStatusText: {
+    fontWeight: 'bold',
+    fontSize: 14,
+    marginLeft: 10,
+  },
+  testHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  guideContainer: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  guideTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  guideGrid: {
+    gap: 8,
+  },
+  guideRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  guideLabel: {
+    fontSize: 13,
+    color: '#666',
+  },
+  guideValue: {
+    fontSize: 13,
+    color: '#333',
+    fontWeight: '500',
+  },
+  guideTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  statusText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  guideValueContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
 });
 
