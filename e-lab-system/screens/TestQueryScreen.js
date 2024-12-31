@@ -41,14 +41,17 @@ const TestQueryScreen = () => {
   };
 
   const calculateAge = () => {
-    if (!patientInfo || !patientInfo.birthDate) return 0;
-    
     const today = new Date();
-    const birthDateObj = new Date(patientInfo.birthDate);
+    const birthDateObj = new Date(birthDate);
     
     let months = (today.getFullYear() - birthDateObj.getFullYear()) * 12;
     months -= birthDateObj.getMonth();
     months += today.getMonth();
+    
+    // Günleri de hesaba katarak daha doğru bir sonuç elde edelim
+    if (today.getDate() < birthDateObj.getDate()) {
+      months--;
+    }
     
     return months <= 0 ? 0 : months;
   };
@@ -1193,8 +1196,8 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     fontSize: 16,
-    fontWeight: 'bold',
     color: '#2d3436',
+    fontWeight: '500',
   },
   buttonContainer: {
     flexDirection: 'row',
